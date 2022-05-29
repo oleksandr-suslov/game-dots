@@ -9,22 +9,20 @@ class GameScene extends Phaser.Scene {
   }
 
   //   preload() {
-  //     this.load.image('dot0', './src/assets/dots/dot0.png');
-  //     
-  //     this.load.spritesheet('lines', 'sprites/line.png', {
+  //     this.load.image('img', '/assets/1.png');
+  //
+  //     this.load.spritesheet('line', 'sprites/line.png', {
   //       frameWidth: config.dotSize * 3,
   //       frameHeight: config.dotSize * 3,
   //     });
   //   }
 
   create() {
-
     this.canPick = true;
     this.dragging = false;
-    this.isMouseButtonDown = false;
-    this.currentLineColor =  null;
-    this.lineStart = []
-
+    this.graphics = this.add.graphics();
+    this.line = new Phaser.Geom.Line();
+  
     this.draw3 = new Draw3({
       rows: 6,
       columns: 6,
@@ -32,10 +30,10 @@ class GameScene extends Phaser.Scene {
     });
 
     this.scoreValue = 0;
-
-    (this.timeOutScore = this.add.text(10, 10, `score result: ${this.scoreValue}`)),
+    this.pointsOfDot = 1;
+    (this.timeOutScore = this.add.text(50, 20, `score result: ${this.scoreValue}`)),
       {
-        font: '36px VintageKing',
+        font: '16px VintageKing',
         fill: '0',
       };
 
@@ -58,71 +56,18 @@ class GameScene extends Phaser.Scene {
     let colors = this.draw3.getColors(); // array counts
     let counter = 0;
 
-    // this.poolArray = [];
-    // this.arrowArray = [];
-
     for (let i = 0; i < this.draw3.getRows(); i++) {
-      //   this.arrowArray[i] = [];
       for (let j = 0; j < this.draw3.getColumns(); j++) {
         let posX = config.boardOffset.x + config.dotSize * j + config.dotSize / 2;
         let posY = config.boardOffset.y + config.dotSize * i + config.dotSize / 2;
         var gem = this.add.circle(posX, posY, 15, colors[counter]);
         gem.setInteractive();
-        // console.log(gem)
-
-        // get color on mouse down current circle
-        gem.once('pointerdown', this.eventClick.bind(this, gem))
-        // gem.once('pointerdown', function ( i, j, gem) {
-
-        //     console.log('event mouse down gem', gem)
-        //     console.log('event mouse down i', i)
-        //     console.log('event mouse down j', j)
-        //     this.currentLineColor = gem.fillColor;
-        //     // this.isMouseButtonDown = true;
-        //     // this.currentLine.circlesOnLine.push(gem);
-        //     this.lineStart.push({x: gem.x, y: gem.y});
-        //     this.isMouseButtonDown =true;
-        //     console.log('event mouse down', this.lineStart)
-        //     console.log('left-click this.currentLineColor', this.currentLineColor)
-        //   }, this);
-
-          gem.once('pointerup', function () {           
-            this.currentLineColor = null;
-            // this.currentLine.circlesOnLine= [];
-            this.isMouseButtonDown = false;
-            }, this);
-
-        //   gem.once('pointermove', function (pointer) { 
-        //     if(this.isMouseButtonDown){
-        //         var line = new Phaser.Geom.Line(posX, posY, pointer.x, pointer.y);  
-        //         var graphics = this.add.graphics({ lineStyle: { width: 10, color: this.currentLineColor } });       
-        //         graphics.strokeLineShape(line);
-        //         }
-        //   }, this);
-
-        // gem.on('pointerenter', this.onEvent.bind(this, gem));
-        // gem.on('pointerleave', this.onEvent.bind(this, gem));
-        // gem.on('pointerover', this.onEvent.bind(this, gem));
-        // gem.on('pointerout', this.onEvent.bind(this, gem));
-
-        // let arrow = this.add.sprite(posX, posY, `lines`);
-        // arrow.setDepth(2);
-        // arrow.visible = false;
-        // this.arrowArray[i][j] = arrow;
-        // console.log('lineStart', this.lineStart)
         this.draw3.setCustomData(i, j, gem);
-
         counter += 1;
       }
     }
   }
-eventClick(gem){
-    this.currentLineColor = gem.fillColor;
-    this.isMouseButtonDown = true;
-    this.lineStart.push({x: gem.x, y: gem.y});
-    // console.log('lineStart', this.lineStart)
-
-}
+ 
   gemSelect(pointer) {
     if (this.canPick) {
       let row = Math.floor((pointer.y - config.boardOffset.y) / config.dotSize);
@@ -133,15 +78,16 @@ eventClick(gem){
         this.draw3.putInChain(row, col);
         // this.draw3.customDataOf(row, col).alpha = 0.5;
         this.dragging = true;
+        this.line.setTo(
+          this.draw3.chain[0].x,
+          this.draw3.chain[0].y,
+          this.draw3.chain[0].x,
+          this.draw3.chain[0].y,
+        );
 
-        //  var line = new Phaser.Geom.Line(
-        //         this.lineStart[this.lineStart.length-1].x, 
-        //         this.lineStart[this.lineStart.length-1].y, 
-        //         this.lineStart[this.lineStart.length-1].x, 
-        //         this.lineStart[this.lineStart.length-1].y
-        //         );
-        //         var graphics = this.add.graphics({ lineStyle: { width: 10, color: this.currentLineColor} });   
-        //     graphics.strokeLineShape(line);
+        this.graphics.clear();
+        this.graphics.lineStyle(10, this.draw3.chain[0].color);
+        this.graphics.strokeLineShape(this.line);
       }
     }
   }
@@ -160,51 +106,36 @@ eventClick(gem){
 
         if (distance < config.dotSize * 0.4) {
           if (this.draw3.continuesChain(row, col)) {
-
             // this.draw3.customDataOf(row, col).alpha = 0.5;
             this.draw3.putInChain(row, col);
-            // console.log('this.draw3=====', this.draw3.chain)
 
-//============нужно исправить!!!!!!!!!!!!========================
-        // if (
-        //     this.draw3.chain.length > 1 &&
-        //     this.draw3.chain[this.draw3.chain.length - 1].color === this.currentLineColor     
-        //   ) {
-        
-        //     for (let i = 0; i < this.draw3.chain.length; i++) {
-        //         graphics.lineStyle(10, this.currentLineColor);
-        
-        //       if (this.draw3.chain.length > 1) {
-        //         graphics.setTo(
-        //           this.draw3.chain[this.draw3.chain.length - 2].x,
-        //           this.draw3.chain[this.draw3.chain.length - 2].y,
-        //         );
-        //         graphics.lineTo(
-        //           this.draw3.chain[this.draw3.chain.length - 1].x,
-        //           this.draw3.chain[this.draw3.chain.length - 1].y,
-        //         );
-        //       } else {
-        //         graphics.setTo(
-        //           this.draw3.chain[i].x,
-        //           this.draw3.chain[i].y,
-        //         );
-        
-        //         graphics.lineTo(
-        //           this.draw3.chain[this.draw3.chain.length - 1].x,
-        //           this.draw3.chain[this.draw3.chain.length - 1].y,
-        //         );
-            //   }
-        
-            // }
-        //   }
-
-            // this.displayPath();
+            //===============
+            let chainLength = this.draw3.chain.length;
+            let chain = this.draw3.chain;
+            if (chainLength > 0 && pointer.isDown) {
+              for (let i = 0; i < chainLength; i++) {
+                if (chainLength > 1) {
+                  this.line.x1 = chain[chainLength - 2].x; // start line
+                  this.line.y1 = chain[chainLength - 2].y;
+                  this.line.x2 = chain[chainLength - 1].x; // end line
+                  this.line.y2 = chain[chainLength - 1].y;
+                  this.graphics.lineStyle(10, chain[0].color);
+                  this.graphics.strokeLineShape(this.line);
+                } else {
+                  this.line.x1 = chain[i].x;
+                  this.line.y1 = chain[i].y;
+                  this.line.x2 = chain[chainLength - 1].x;
+                  this.line.x2 = chain[chainLength - 1].y;
+                  this.graphics.lineStyle(10, chain[0].color);
+                  this.graphics.strokeLineShape(this.line);
+                }
+              }
+            }
+            //===================
           } else {
             if (this.draw3.backtracksChain(row, col)) {
               let removedItem = this.draw3.removeLastChainItem();
-            //   this.draw3.customDataOf(removedItem.row, removedItem.column).alpha = 1;
-              //   this.hidePath();
-              //   this.displayPath();
+              //   this.draw3.customDataOf(removedItem.row, removedItem.column).alpha = 1;
             }
           }
         }
@@ -214,7 +145,7 @@ eventClick(gem){
 
   removeGems() {
     if (this.dragging) {
-      //   this.hidePath();
+      this.graphics.clear();
       this.dragging = false;
       if (this.draw3.getChainLength() < 2) {
         let chain = this.draw3.emptyChain();
@@ -229,8 +160,7 @@ eventClick(gem){
         let destroyed = 0;
         gemsToRemove.forEach(
           function (gem) {
-            this.scoreValue = this.scoreValue + 10;
-            // this.poolArray.push(this.draw3.customDataOf(gem.row, gem.column));
+            this.scoreValue = this.scoreValue + this.pointsOfDot;
             destroyed++;
             this.tweens.add({
               targets: this.draw3.customDataOf(gem.row, gem.column),
@@ -303,33 +233,6 @@ eventClick(gem){
     );
   }
 
-  //   displayPath() {
-  //     let path = this.draw3.getPath();
-  //     path.forEach(
-  //       function (item) {
-  //         this.arrowArray[item.row][item.column].visible = true;
-  //         if (!this.draw3.isDiagonal(item.direction)) {
-  //           this.arrowArray[item.row][item.column].setFrame(0);
-  //           this.arrowArray[item.row][item.column].angle = 90 * Math.log2(item.direction);
-  //         } else {
-  //           this.arrowArray[item.row][item.column].setFrame(1);
-  //           this.arrowArray[item.row][item.column].angle =
-  //             90 *
-  //             (item.direction -
-  //               9 +
-  //               (item.direction < 9 ? item.direction / 3 - 1 - (item.direction % 2) : 0));
-  //         }
-  //       }.bind(this),
-  //     );
-  //   }
-  //   hidePath() {
-  //     this.arrowArray.forEach(function (item) {
-  //       item.forEach(function (subItem) {
-  //         subItem.visible = false;
-  //         subItem.angle = 0;
-  //       });
-  //     });
-  //   }
 }
 
 //====================================
@@ -354,7 +257,6 @@ let game = new Phaser.Game(config);
 
 //===============================================
 
-
 class Draw3 {
   // constructor, simply turns obj information into class properties and creates
   // an array called "chain" which will contain chain information
@@ -366,7 +268,6 @@ class Draw3 {
     this.color = [];
   }
 
-  
   // returns the number of rows in board
   getRows() {
     return this.rows;
@@ -473,44 +374,6 @@ class Draw3 {
     };
   }
 
-  // returns the path connecting all items in chain, as an object containing row, column and direction
-//   getPath() {
-//     let path = [];
-//     if (this.getChainLength() > 1) {
-//       for (let i = 1; i < this.getChainLength(); i++) {
-//         let deltaColumn = this.getNthChainItem(i).column - this.getNthChainItem(i - 1).column;
-//         let deltaRow = this.getNthChainItem(i).row - this.getNthChainItem(i - 1).row;
-//         let direction = 0;
-//         direction += deltaColumn < 0 ? Draw3.LEFT : deltaColumn > 0 ? Draw3.RIGHT : 0;
-//         direction += deltaRow < 0 ? Draw3.UP : deltaRow > 0 ? Draw3.DOWN : 0;
-//         path.push({
-//           row: this.getNthChainItem(i - 1).row,
-//           column: this.getNthChainItem(i - 1).column,
-//           direction: direction,
-//         });
-//       }
-//     }
-//     return path;
-//   }
-
-//   // returns an array with basic directions (UP, DOWN, LEFT, RIGHT) given a direction
-//   getDirections(n) {
-//     let result = [];
-//     let base = 1;
-//     while (base <= n) {
-//       if (base & n) {
-//         result.push(base);
-//       }
-//       base <<= 1;
-//     }
-//     return result;
-//   }
-
-//   // returns true if the number represents a diagonal movement
-//   isDiagonal(n) {
-//     return this.getDirections(n).length === 2;
-//   }
-
   // returns the last chain item
   getLastChainItem() {
     return this.getNthChainItem(this.getChainLength() - 1);
@@ -529,7 +392,6 @@ class Draw3 {
         return true;
       }
     }
-    console.log('console.log(this.chain)', this.chain)
     return false;
   }
 
@@ -545,7 +407,7 @@ class Draw3 {
       column: col,
       x: this.customDataOf(row, col).x,
       y: this.customDataOf(row, col).y,
-      color: this.customDataOf(row, col).fillColor
+      color: this.customDataOf(row, col).fillColor,
     });
   }
 
@@ -650,7 +512,6 @@ class Draw3 {
         }
       }
     }
-    // console.log('arrangeBoardAfterChain', result);
     return result;
   }
 
